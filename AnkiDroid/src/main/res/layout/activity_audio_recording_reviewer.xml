@@ -40,13 +40,29 @@
             android:id="@+id/audio_waveform_view"
             android:layout_height="40dp"
             android:layout_width="match_parent"
-            android:layout_alignParentStart="true"
+            android:layout_toEndOf="@+id/action_speed"
             android:layout_toStartOf="@+id/action_start_recording"
             android:layout_centerVertical="true"
             android:layout_marginStart="14dp"
             android:paddingVertical="6dp"
             android:background="?android:attr/colorBackground"
             app:display_vertical_line="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/action_speed"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="8dp"
+            android:gravity="center"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="8dp"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            app:iconGravity="textStart"/>
 
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/audio_progress_indicator"
@@ -57,6 +73,7 @@
             android:layout_centerVertical="true"
             android:foregroundGravity="center"
 
+            android:layout_toEndOf="@+id/action_speed"
             android:layout_toStartOf="@+id/action_start_recording"
 
             android:progress="0"
