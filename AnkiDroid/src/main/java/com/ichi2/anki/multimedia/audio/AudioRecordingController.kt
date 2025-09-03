@@ -235,8 +235,11 @@ class AudioRecordingController(
                     text = String.format(java.util.Locale.US,"%.2fx", newSpeed)
 
                     // persist
+                    @Suppress("ApplySharedPref")
                     context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        .edit { putFloat(PREF_PLAYBACK_SPEED, newSpeed) }
+                        .edit()
+                        .putFloat(PREF_PLAYBACK_SPEED, newSpeed)
+                        .apply()
 
                     // remember and apply
                     playbackSpeed = newSpeed
@@ -612,7 +615,7 @@ class AudioRecordingController(
     private fun setPlaybackSpeedForMediaPlayer(speed: Float) {
         playbackSpeed = speed
         try {
-            val params = audioPlayer?.playbackParams ?: PlaybackParams()
+            val params = audioPlayer?.playbackParams ?: android.media.PlaybackParams()
             params.speed = speed
             params.pitch = 1.0f  // keep pitch unchanged
             audioPlayer?.playbackParams = params
