@@ -192,6 +192,8 @@ open class Reviewer :
 
     // Record Audio
     private var isMicToolBarVisible = false
+    private var prefAutoReplay = false
+    private var prefAutoRecording = false
 
     /** Controller for 'Voice Playback' feature */
     private var audioRecordingController: AudioRecordingController? = null
@@ -1094,6 +1096,8 @@ open class Reviewer :
         prefHideDueCount = preferences.getBoolean("hideDueCount", false)
         prefShowETA = preferences.getBoolean("showETA", false)
         prefFullscreenReview = isFullScreenReview(preferences)
+        prefAutoRecording = preferences.getBoolean("autoRecord", false)
+        prefAutoReplay = preferences.getBoolean("autoplayVoicePlayback", false)    
         actionButtons.setup(preferences)
         return preferences
     }
@@ -1240,6 +1244,10 @@ open class Reviewer :
         answerTimer.setupForCard(getColUnsafe, currentCard!!)
         delayedHide(100)
         super.displayCardQuestion()
+        
+        if (isMicToolBarVisible && prefAutoRecording) {
+            recordVoice()
+        }
     }
 
     @VisibleForTesting
@@ -1256,6 +1264,20 @@ open class Reviewer :
         if (stopTimerOnAnswer) {
             answerTimer.pause()
         }
+
+        if (isMicToolBarVisible && prefAutoReplay) {
+            saveRecording()
+            Handler(Looper.getMainLooper()).postDelayed({
+                try {
+                    replayVoice()
+                } catch (e: IllegalStateException) {
+                    Timber.w(e, "replayVoice called before MediaPlayer prepared")
+                } catch (e: Exception) {
+                    Timber.e(e, "Unexpected error in replayVoice")
+                }
+            }, 100)  // retry after 100ms
+        }
+        
         super.displayCardAnswer()
     }
 
