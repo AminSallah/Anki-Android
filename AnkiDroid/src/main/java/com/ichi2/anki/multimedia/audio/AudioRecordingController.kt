@@ -110,6 +110,15 @@ class AudioRecordingController(
     // wave layout takes up a lot of screen in HORIZONTAL layout so we need to hide it
     private var orientationEventListener: OrientationEventListener? = null
 
+    // playback speed state
+    private lateinit var speedButton: MaterialButton
+    private val speeds = floatArrayOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+    private var speedIndex = 1 // default -> 1.0x
+    private var playbackSpeed = speeds[speedIndex]
+
+    private val PREFS_NAME = "ankidroid_prefs"
+    private val PREF_PLAYBACK_SPEED = "playback_speed"
+
     init {
         Timber.d("Initializing the audio recorder UI")
         if (linearLayout != null) {
@@ -200,6 +209,52 @@ class AudioRecordingController(
                     toggleSave()
                 }
             }
+        // restore saved speed (if present)
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedSpeed = prefs.getFloat(PREF_PLAYBACK_SPEED, speeds[speedIndex])
+        val foundIndex = speeds.indexOfFirst { kotlin.math.abs(it - savedSpeed) < 0.001f }
+        if (foundIndex >= 0) {
+            speedIndex = foundIndex
+            playbackSpeed = speeds[speedIndex]
+        } else {
+            playbackSpeed = speeds[speedIndex]
+        }
+
+        // wire the speed button (must exist in layout)
+        try {
+            speedButton = layout.findViewById<MaterialButton>(R.id.action_speed).apply {
+                // display formatted text, uses string resource playback_speed_format ""
+                text = String.format(java.util.Locale.US, "%.2fx", speeds[speedIndex])
+
+                setOnClickListener {
+                    // cycle to next speed
+                    speedIndex = (speedIndex + 1) % speeds.size
+                    val newSpeed = speeds[speedIndex]
+
+                    // update UI
+                    text = String.format(java.util.Locale.US,"%.2fx", newSpeed)
+
+                    // persist
+                    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        .edit { putFloat(PREF_PLAYBACK_SPEED, newSpeed) }
+
+                    // remember and apply
+                    playbackSpeed = newSpeed
+
+                    // if currently playing, try to apply immediately
+                    try {
+                        if (audioPlayer?.isPlaying == true) {
+                            audioPlayer?.playbackParams =
+                                audioPlayer?.playbackParams?.apply { speed = newSpeed }!!
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to apply new speed while playing")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Speed button not found in layout or failed to initialize")
+        }
 
         setUpMediaPlayer()
 
@@ -554,10 +609,26 @@ class AudioRecordingController(
         audioTimer.stop()
     }
 
+    private fun setPlaybackSpeedForMediaPlayer(speed: Float) {
+        playbackSpeed = speed
+        try {
+            val params = audioPlayer?.playbackParams ?: PlaybackParams()
+            params.speed = speed
+            params.pitch = 1.0f  // keep pitch unchanged
+            audioPlayer?.playbackParams = params
+        } catch (e: IllegalStateException) {
+            Timber.w(e, "failed to set playback speed")
+        } catch (e: Exception) {
+            Timber.w(e, "unexpected error setting playback speed")
+        }
+    }
+
     fun playPausePlayer() {
         audioProgressBar.max = audioPlayer?.duration ?: 0
         if (!audioPlayer!!.isPlaying) {
             Timber.i("saved recording: playing ")
+            // apply desired speed (1.25f example).
+            setPlaybackSpeedForMediaPlayer(playbackSpeed)
             try {
                 audioPlayer!!.start()
             } catch (e: Exception) {
