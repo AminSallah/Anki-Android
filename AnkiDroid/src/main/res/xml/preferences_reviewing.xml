@@ -55,6 +55,18 @@
             android:key="@string/keep_screen_on_preference"
             android:summary="@string/pref_keep_screen_on_summ"
             android:title="@string/pref_keep_screen_on" />
+        <!-- ✅ New Option: Auto Record -->
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="autoRecord"
+            android:summary="Automatically start recording when showing the front of a card"
+            android:title="Auto Record" />
+        <!-- ✅ New Option: Autoplay Voice Playback -->
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="autoplayVoicePlayback"
+            android:summary="Automatically play saved voice when flipping to back of card"
+            android:title="Autoplay Voice Playback" />
         <com.ichi2.preferences.SliderPreference
             android:key="@string/double_tap_timeout_pref_key"
             android:title="@string/pref_double_tap_time_interval"
