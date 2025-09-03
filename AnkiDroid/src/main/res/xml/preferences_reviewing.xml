@@ -58,13 +58,13 @@
         <!-- ✅ New Option: Auto Record -->
         <SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="autoRecord"
+            android:key="@string/auto_record_preference"
             android:summary="Automatically start recording when showing the front of a card"
             android:title="Auto Record" />
         <!-- ✅ New Option: Autoplay Voice Playback -->
         <SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="autoplayVoicePlayback"
+            android:key="@string/autoplay_voice_playback_preference"
             android:summary="Automatically play saved voice when flipping to back of card"
             android:title="Autoplay Voice Playback" />
         <com.ichi2.preferences.SliderPreference
