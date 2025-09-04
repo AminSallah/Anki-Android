@@ -38,4 +38,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: signed-apk
-          path: app/build/outputs/**/*.apk
+          path: AnkiDroid/full/release/*.apk
