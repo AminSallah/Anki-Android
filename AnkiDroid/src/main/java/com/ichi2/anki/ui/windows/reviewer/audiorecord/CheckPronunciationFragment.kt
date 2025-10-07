@@ -95,6 +95,15 @@ class CheckPronunciationFragment : Fragment(R.layout.check_pronunciation_fragmen
             },
         )
 
+        playView.setSpeedButtonListener(object : AudioPlayView.SpeedButtonListener {
+            override fun onSpeedChanged(newSpeedString: String) {
+                val speed = newSpeedString.toFloatOrNull() ?: 1.0f
+                // ask the ViewModel to apply it immediately
+                viewModel.setPlaybackSpeedDirectly(speed)
+            }
+        })
+
+
         recordView.setRecordingListener(
             object : AudioRecordView.RecordingListener {
                 override fun onRecordingPermissionRequired() {
@@ -148,6 +157,27 @@ class CheckPronunciationFragment : Fragment(R.layout.check_pronunciation_fragmen
                     recordView.forceReset()
                 }
             }
+        // add this block to handle start/stop commands from ReviewerViewModel
+        studyScreenViewModel.autoRecordCommandFlow
+            .flowWithLifecycle(lifecycle)
+            .collectIn(lifecycleScope) { start ->
+                if (!start) {
+                    // stop requested
+                    // If currently recording, tell the CheckPronunciationViewModel to complete
+                    // stop requested
+                    if (recordView.isRecording()) {
+                        recordView.stopRecordingProgrammatically() // triggers viewModel.onRecordingCompleted() via listener
+                    }
+                    return@collectIn
+                }
+
+
+                // We have permission — start recording programmatically
+                if (!recordView.isRecording()) {
+                    recordView.startRecordingProgrammatically()
+                }
+            }
+
         studyScreenViewModel.replayVoiceFlow
             .flowWithLifecycle(lifecycle)
             .collectIn(lifecycleScope) {

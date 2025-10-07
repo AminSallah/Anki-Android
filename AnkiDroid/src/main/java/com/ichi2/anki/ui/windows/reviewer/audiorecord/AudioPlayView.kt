@@ -23,8 +23,10 @@ import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.ichi2.anki.R
+import com.ichi2.anki.settings.Prefs
 
 /**
  * Simple player with a progress bar, a play button and a cancel button
@@ -32,6 +34,10 @@ import com.ichi2.anki.R
 class AudioPlayView : ConstraintLayout {
     private val progressBar: LinearProgressIndicator
     private val playIconView: ImageView
+
+    private val speedButton: MaterialButton
+
+    private val speedChoices = listOf("0.5", "1.0", "1.25" ,"1.5", "1.75","2.0", "2.25", "2.5")
 
     constructor(context: Context) : this(context, null, 0, 0)
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0, 0)
@@ -51,6 +57,48 @@ class AudioPlayView : ConstraintLayout {
         findViewById<View>(R.id.cancel_button).setOnClickListener {
             buttonPressListener?.onCancelButtonPressed()
         }
+
+        speedButton = findViewById<MaterialButton>(R.id.speed_button)
+
+        displaySpeedOnButton()
+
+        speedButton.setOnClickListener {
+            // cycle to next of the speedChoices
+            val cur = currentSpeedString()
+            val idx = speedChoices.indexOf(cur).let { if (it == -1) speedChoices.indexOf("1.0") else it }
+            val next = speedChoices[(idx + 1) % speedChoices.size]
+
+            // save as string in Prefs
+            Prefs.putString(R.string.audio_playback_speed, next)
+
+            // update ui
+            speedButton.text = "${next}x"
+
+            speedButtonListener?.onSpeedChanged(next)
+
+
+
+        }
+    }
+
+    interface SpeedButtonListener {
+        fun onSpeedChanged(newSpeedString: String)
+    }
+
+    private var speedButtonListener: SpeedButtonListener? = null
+
+    fun setSpeedButtonListener(listener: SpeedButtonListener?) {
+        speedButtonListener = listener
+    }
+
+
+    fun currentSpeedString(): String {
+        return Prefs.getString(R.string.audio_playback_speed, "1.0") ?: "1.0"
+    }
+
+    fun displaySpeedOnButton() {
+        val s = currentSpeedString()
+        speedButton.text = "${s}x"
     }
 
     interface ButtonPressListener {

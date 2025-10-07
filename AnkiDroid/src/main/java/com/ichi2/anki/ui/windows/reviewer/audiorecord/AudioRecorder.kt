@@ -87,6 +87,7 @@ class AudioRecorder(
         recorder.release()
     }
 
+
     private fun createTempRecordingFile() =
         try {
             File.createTempFile("audiorec", ".3gp", cacheDir)

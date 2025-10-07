@@ -98,6 +98,17 @@ class CheckPronunciationViewModel(
         onCancelPlayback()
     }
 
+    fun setPlaybackSpeedDirectly(speed: Float) {
+        viewModelScope.launch {
+            try {
+                audioPlayer.setPlaybackSpeed(speed)
+            } catch (e: Exception) {
+
+            }
+        }
+    }
+
+
     private fun playCurrentFile() {
         val file = currentFile ?: return
         audioPlayer.play(file) {

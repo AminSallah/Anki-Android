@@ -24,6 +24,7 @@ import com.ichi2.anki.AbstractFlashcardViewer.Companion.RESULT_NO_MORE_CARDS
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.Flag
+import com.ichi2.anki.R
 import com.ichi2.anki.Reviewer
 import com.ichi2.anki.asyncIO
 import com.ichi2.anki.browser.BrowserDestination
@@ -87,6 +88,8 @@ class ReviewerViewModel :
                 ?: Card(anki.cards.Card.getDefaultInstance())
         }
     val finishResultFlow = MutableSharedFlow<Int>()
+
+    val autoRecordCommandFlow = MutableSharedFlow<Boolean>() // true = start, false = stop
     val isMarkedFlow = MutableStateFlow(false)
     val flagFlow = MutableStateFlow(Flag.NONE)
     val actionFeedbackFlow = MutableSharedFlow<String>()
@@ -186,7 +189,25 @@ class ReviewerViewModel :
                 delay(50)
             }
             updateNextTimes()
+
             showAnswer()
+            // Ask fragment to stop recording (if it was recording), then request playback.
+            try {
+                if (voiceRecorderEnabledFlow.value) {
+                    autoRecordCommandFlow.emit(false) // tell fragment to stop recording
+                    // small delay to allow audio recorder to finalize file (tune if needed)
+
+                    val autoplayEnabled = Prefs.getBoolean(R.string.autoplay_enabled, false)
+
+                    if (autoplayEnabled) {
+                        delay(150)
+                        replayVoiceFlow.emit(Unit) // trigger playback in fragment (it already listens)
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "autoRecord stop/play emit failed")
+            }
+
             loadAndPlayMedia(CardSide.ANSWER)
             if (!autoAdvance.shouldWaitForAudio()) {
                 autoAdvance.onShowAnswer()
@@ -402,6 +423,16 @@ class ReviewerViewModel :
         runStateMutationHook()
         updateMarkIcon()
         updateFlagIcon()
+
+        // If the voice-record UI is enabled, ask the pronunciation fragment to start recording.
+        try {
+            if (voiceRecorderEnabledFlow.value) {
+                autoRecordCommandFlow.emit(true) // tell fragment to start
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "autoRecordCommandFlow.emit(start) failed")
+        }
+
         if (!autoAdvance.shouldWaitForAudio()) {
             autoAdvance.onShowQuestion()
         } // else run in onMediaGroupCompleted

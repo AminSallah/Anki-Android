@@ -16,8 +16,11 @@
 package com.ichi2.anki.ui.windows.reviewer.audiorecord
 
 import android.media.MediaPlayer
+import com.ichi2.anki.R
 import timber.log.Timber
 import java.io.Closeable
+import android.media.PlaybackParams
+import com.ichi2.anki.settings.Prefs
 import java.io.IOException
 
 class AudioPlayer : Closeable {
@@ -28,6 +31,9 @@ class AudioPlayer : Closeable {
     private var isPrepared = false
 
     var onCompletion: (() -> Unit)? = null
+
+    @Volatile
+    private var playbackSpeed: Float = 1.0f
 
     val duration: Int
         get() = if (isPrepared) mediaPlayer.duration else 0
@@ -41,6 +47,35 @@ class AudioPlayer : Closeable {
         }
     }
 
+    fun setPlaybackSpeed(speed: Float) {
+        if (isPlaying) {
+            val clamped = speed.coerceIn(0.25f, 3.0f)
+            playbackSpeed = clamped
+            try {
+                val params = mediaPlayer.playbackParams
+                params.speed = clamped
+                params.pitch = 1.0f
+                mediaPlayer.playbackParams = params
+                Timber.i("AudioPlayer::setPlaybackSpeed applied %.2f", clamped)
+
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to set playback speed")
+            }
+        }
+    }
+
+    private fun loadPlaybackSpeedFromPrefs() {
+        try {
+            val speedStr = Prefs.getString(R.string.audio_playback_speed, "1.0")
+            val speed = speedStr?.toFloatOrNull() ?: 1.0f
+            playbackSpeed = speed.coerceIn(0.5f, 2.5f) // reasonable bounds
+            Timber.i("AudioPlayer::loadPlaybackSpeedFromPrefs speed=%f", playbackSpeed)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read playback speed from prefs")
+            playbackSpeed = 1.0f
+        }
+    }
+
     fun play(
         filePath: String,
         onPrepared: () -> Unit,
@@ -51,9 +86,18 @@ class AudioPlayer : Closeable {
             isPrepared = false
             isPlaying = false
 
+            // Load speed from preferences
+            loadPlaybackSpeedFromPrefs()
+
             mediaPlayer.setDataSource(filePath)
             mediaPlayer.setOnPreparedListener { mp ->
                 isPrepared = true
+
+                val params = PlaybackParams()
+                params.speed = playbackSpeed
+                params.pitch = 1.0f
+                mp.playbackParams = params
+
                 mp.start()
                 isPlaying = true
                 onPrepared()

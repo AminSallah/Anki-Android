@@ -291,6 +291,52 @@ class AudioRecordView : ConstraintLayout {
         displayRunningRecord()
     }
 
+    // Programmatic API ----------------------------------------------------
+
+    /**
+     * Start recording programmatically (equivalent to user press).
+     * Calls recordingListener?.onRecordingPermissionRequired() if permission missing.
+     * MUST be called on main thread.
+     */
+    fun startRecordingProgrammatically() {
+        if (!Permissions.canRecordAudio(context)) {
+            recordingListener?.onRecordingPermissionRequired()
+            return
+        }
+        if (state == ViewState.RECORDING || state == ViewState.LOCKED) return
+        startRecording()
+
+        recordButtonIcon.setImageResource(R.drawable.ic_stop)
+        recordButton.setOnTouchListener(null)
+        recordButton.setOnClickListener {
+            stopRecording(RecordingBehavior.RELEASE)
+        }
+        layoutSlideCancel.visibility = GONE
+        layoutLock.visibility = GONE
+    }
+
+    /**
+     * Stop recording programmatically as a normal release (calls onRecordingCompleted()).
+     * MUST be called on main thread.
+     */
+    fun stopRecordingProgrammatically() {
+        if (state != ViewState.RECORDING && state != ViewState.LOCKED) return
+        stopRecording(RecordingBehavior.RELEASE)
+    }
+
+    /**
+     * Cancel current recording programmatically (calls onRecordingCanceled()).
+     * MUST be called on main thread.
+     */
+    fun cancelRecordingProgrammatically() {
+        if (state != ViewState.RECORDING && state != ViewState.LOCKED) return
+        stopRecording(RecordingBehavior.CANCEL)
+    }
+
+    /** Return true when recording (or locked) is active. */
+    fun isRecording(): Boolean = state == ViewState.RECORDING || state == ViewState.LOCKED
+
+
     private fun showCancelAndLockSliders() {
         recordButton
             .animate()
