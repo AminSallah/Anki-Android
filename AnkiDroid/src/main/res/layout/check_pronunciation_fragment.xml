@@ -25,9 +25,8 @@
         android:id="@+id/guideline"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintGuide_end="60dp"
         android:orientation="vertical"
-        />
+        app:layout_constraintGuide_percent="0.8564477" />
 
     <com.ichi2.anki.ui.windows.reviewer.audiorecord.AudioRecordView
         android:id="@+id/audio_record_view"
