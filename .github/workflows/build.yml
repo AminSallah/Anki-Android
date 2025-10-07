@@ -1,0 +1,50 @@
+name: Build Signed APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Prepare credentials
+        run: |
+          echo "KEYSTOREPATH=$HOME/src/android-keystore" >> $GITHUB_ENV
+          echo "KEYALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "KEYSTOREPWD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "KEYPWD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          mkdir -p ~/src
+          cd ~/src
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > android-keystore
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build signed APK
+        run: ./gradlew assembleFullRelease --no-daemon
+
+      - name: Show current dir and list APKs
+        run: |
+          echo "PWD: $(pwd)"
+          ls -la
+          echo "Finding APK files..."
+          find . -type f -name "*.apk" -print || true
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnkiDroid-full-arm64-v8a-release.apk
+          path: ./AnkiDroid/build/outputs/apk/full/release/AnkiDroid-full-arm64-v8a-release.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnkiDroid-full-armeabi-v7a-release.apk
+          path: ./AnkiDroid/build/outputs/apk/full/release/AnkiDroid-full-armeabi-v7a-release.apk
